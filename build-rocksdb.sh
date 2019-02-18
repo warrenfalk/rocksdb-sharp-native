@@ -16,7 +16,6 @@
 #
 # Instructions for upgrading rocksdb version
 # 1. Fetch the desired version locally with something like:
-#    cd native-build/rocksdb
 #    git fetch https://github.com/facebook/rocksdb.git v4.13
 #    git checkout FETCH_HEAD
 #    git push -f warrenfalk HEAD:rocksdb_sharp
@@ -114,8 +113,8 @@ if [[ $OSINFO == *"MSYS"* || $OSINFO == *"MINGW"* ]]; then
 
 		cmd //c "msbuild build/rocksdb.sln /p:Configuration=Release /m:$CONCURRENCY" || fail "Rocksdb release build failed"
 		git checkout -- thirdparty.inc
-		mkdir -p ../native/amd64 && cp -v ./build/Release/rocksdb-shared.dll ../native/amd64/rocksdb.dll
-		mkdir -p ../native-${ROCKSDBVERSION}/amd64 && cp -v ./build/Release/rocksdb-shared.dll ../native-${ROCKSDBVERSION}/amd64/rocksdb.dll
+		mkdir -p ../runtimes/win-x64 && cp -v ./build/Release/rocksdb-shared.dll ../runtimes/win-x64/rocksdb.dll
+		mkdir -p ../rocksdb-${ROCKSDBVERSION}/win-x64 && cp -v ./build/Release/rocksdb-shared.dll ../rocksdb-${ROCKSDBVERSION}/win-x64/rocksdb.dll
 	}) || fail "rocksdb build failed"
 elif [[ $OSDETECT == *"Darwin"* ]]; then
 	fail "Mac OSX build is not yet operational"
@@ -128,9 +127,11 @@ else
 		CFLAGS="-I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include"
 		LDFLAGS="-L/usr/local/lib"
 		LIBEXT=.dylib
+		RUNTIME=osx-x64
 	else
 		CFLAGS=-static-libstdc++
 		LIBEXT=.so
+		RUNTIME=linux-x64
 	fi
 	# Linux Dependencies
 	#sudo apt-get install libsnappy-dev libbz2-dev libz-dev
@@ -170,8 +171,8 @@ else
 		make clean
 		CFLAGS="${CFLAGS}" PORTABLE=1 make -j$CONCURRENCY shared_lib || fail "64-bit build failed"
 		strip librocksdb${LIBEXT}
-		mkdir -p ../native/amd64 && cp -vL ./librocksdb${LIBEXT} ../native/amd64/librocksdb${LIBEXT}
-		mkdir -p ../native-${ROCKSDBVERSION}/amd64 && cp -vL ./librocksdb${LIBEXT} ../native-${ROCKSDBVERSION}/amd64/librocksdb${LIBEXT}
+		mkdir -p ../runtimes/${RUNTIME} && cp -vL ./librocksdb${LIBEXT} ../runtimes/${RUNTIME}/librocksdb${LIBEXT}
+		mkdir -p ../rocksdb-${ROCKSDBVERSION}/${RUNTIME} && cp -vL ./librocksdb${LIBEXT} ../rocksdb-${ROCKSDBVERSION}/${RUNTIME}/librocksdb${LIBEXT}
 
 		# This no longer seems to work on a mac, so I'm removing support for it
 		# If someone wants to try to fix this, then I'm happy to take a PR

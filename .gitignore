@@ -3,6 +3,8 @@ rocksdb
 snappy
 native/
 native-*/
+runtimes/
+rocksdb-*/
 rocksdbversion
 version
 *.zip

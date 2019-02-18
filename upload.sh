@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# The purpose of this script is to help to upload the binaries, once built, to the release folder
-# It first collects them from the various build environments into a native-xxxxx folder
-# Then zips that folder
-# Then updloads the zip
-# Collecting and uploading require privileged information, however, so it loads this from ~/.rocksdb-sharp-upload-info
 export REVISION=$(cat ./build-rocksdb.sh | grep ROCKSDBVERSION | sed -n -e '/^ROCKSDBVERSION=/ s/ROCKSDBVERSION=\(.*\)/\1/p')
 export VERSION=$(cat ./version)
 export RDBVERSION=$(cat ./rocksdbversion)
@@ -72,24 +67,24 @@ upload() {
 	curl --progress-bar -H "Content-Type: application/zip" -X POST --data-binary @${FILE} --netrc-file ~/.netrc ${CURLOPTIONS} ${UPLOADURLBASE}?name=${FILE}
 }
 
-if [ -f ./native-${REVISION}/amd64/librocksdb.dylib ]; then
+if [ -f ./rocksdb-${REVISION}/osx-x64/librocksdb.dylib ]; then
 	echo "Uploading MAC native"
-	ZIPFILE=native-${REVISION}-mac.zip
-	(cd ./native-${REVISION} && zip -r ../${ZIPFILE} ./)
+	ZIPFILE=rocksdb-${REVISION}-osx-x64.zip
+	(cd ./rocksdb-${REVISION} && zip -r ../${ZIPFILE} ./)
 	upload ${REVISION} ${ZIPFILE}
 fi
 
-if [ -f ./native-${REVISION}/amd64/rocksdb.dll ]; then
+if [ -f ./rocksdb-${REVISION}/win-x64/rocksdb.dll ]; then
 	echo "Uploading Windows native"
-	ZIPFILE=native-${REVISION}-windows.zip
-	(cd ./native-${REVISION} && /c/Program\ Files/7-Zip/7z.exe a -r '..\'${ZIPFILE} .)
+	ZIPFILE=rocksdb-${REVISION}.win-x64.zip
+	(cd ./rocksdb-${REVISION} && /c/Program\ Files/7-Zip/7z.exe a -r '..\'${ZIPFILE} .)
 	upload ${REVISION} ${ZIPFILE}
 fi
 
-if [ -f ./native-${REVISION}/amd64/librocksdb.so ]; then
+if [ -f ./rocksdb-${REVISION}/linux-x64/librocksdb.so ]; then
 	echo "Uploading Linux native"
-	ZIPFILE=native-${REVISION}-linux.zip
-	(cd ./native-${REVISION} && zip -r ../${ZIPFILE} ./)
+	ZIPFILE=rocksdb-${REVISION}-linux-x64.zip
+	(cd ./rocksdb-${REVISION} && zip -r ../${ZIPFILE} ./)
 	upload ${REVISION} ${ZIPFILE}
 fi
 
