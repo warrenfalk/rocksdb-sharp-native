@@ -6,57 +6,86 @@
 # Then updloads the zip
 # Collecting and uploading require privileged information, however, so it loads this from ~/.rocksdb-sharp-upload-info
 export REVISION=$(cat ./build-rocksdb.sh | grep ROCKSDBVERSION | sed -n -e '/^ROCKSDBVERSION=/ s/ROCKSDBVERSION=\(.*\)/\1/p')
-export VERSION=$(cat ../version)
-export RDBVERSION=$(cat ../rocksdbversion)
+export VERSION=$(cat ./version)
+export RDBVERSION=$(cat ./rocksdbversion)
 echo "REVISION = ${REVISION}"
 
-hash jq || { echo "jq is required, apt-get install jq"; exit 1; }
+PATH=./bin:${PATH}
+
+hash curl || { echo "curl is required, install curl"; exit 1; }
+hash jq || {
+	# If this is windows, the jq executable can be downloaded
+	OSINFO=$(uname)
+	if [[ $OSINFO == *"MSYS"* || $OSINFO == *"MINGW"* ]]; then
+		echo "Windows detected, will attempt to download jq"
+		mkdir -p bin
+		curl --silent -L 'https://github.com/stedolan/jq/releases/download/jq-1.6/jq-win64.exe' -o bin/jq.exe
+	fi
+}
+hash jq || { echo "jq is required, install jq"; exit 1; }
 
 # These can be overridden in ~/.rocksdb-sharp-upload-info
-ROCKSDB_MAC_COPY="scp -r"
-ROCKSDB_WINDOWS_COPY="scp -r"
+# also use .netrc for github login credentials
 GITHUB_LOGIN="warrenfalk"
 
-. ~/.rocksdb-sharp-upload-info || echo "Failed to load collection and upload parameters"
+if [ -f ~/.rocksdb-sharp-upload-info ]; then
+	. ~/.rocksdb-sharp-upload-info
+fi
 
 cd $(dirname $0)
 
-if [ ! -f ../native-${REVISION}/amd64/librocksdb.dylib ]; then
-	echo "Copying from mac"
-	${ROCKSDB_MAC_COPY} ${ROCKSDB_MAC}/native-${REVISION}/ ../
-	echo "Copy Complete"
+upload() {
+	RELEASE="$1"
+	FILE="$2"
+	RELEASE_INFO=`curl --silent -H "Content-Type: application/json" --netrc-file ~/.netrc ${CURLOPTIONS} https://api.github.com/repos/warrenfalk/rocksdb-sharp-native/releases/${RELEASE}`
+	echo "Release response for https://api.github.com/repos/warrenfalk/rocksdb-sharp-native/releases/${RELEASE}"
+	echo ${RELEASE_INFO}
+
+	echo "Creating Release..."
+	PAYLOAD="{\"tag_name\": \"${RELEASE}\", \"target_commitish\": \"master\", \"name\": \"${RELEASE}\", \"body\": \"RocksDb native ${RELEASE} (rocksdb ${RDBVERSION})\", \"draft\": true, \"prelease\": false }"
+	echo "Sending:"
+	echo ${PAYLOAD}
+	echo "-----------"
+	export RELEASE_INFO=$(curl --silent -H "Content-Type: application/json" -X POST -d "${PAYLOAD}" --netrc-file ~/.netrc ${CURLOPTIONS} https://api.github.com/repos/warrenfalk/rocksdb-sharp-native/releases)
+	echo "Response:"
+	echo ${RELEASE_INFO}
+	echo "-----------"
+	UPLOADURL="$(echo "${RELEASE_INFO}" | jq .upload_url --raw-output)"
+	echo "Upload URL:"
+	echo "${UPLOADURL}"
+	echo "-----------"
+	if [ "$UPLOADURL" == "null" ]; then
+		echo "Release creation not successful or unable to determine upload url:"
+		echo "${DRAFTINFO}"
+		echo "-----------"
+		exit 1;
+	fi
+	UPLOADURLBASE="${UPLOADURL%\{*\}}"
+	echo "Uploading Zip..."
+	echo "to $UPLOADURLBASE"
+	curl --progress-bar -H "Content-Type: application/zip" -X POST --data-binary @${FILE} --netrc-file ~/.netrc ${CURLOPTIONS} ${UPLOADURLBASE}?name=${FILE}
+}
+
+if [ -f ./native-${REVISION}/amd64/librocksdb.dylib ]; then
+	echo "Uploading MAC native"
+	ZIPFILE=native-${REVISION}-mac.zip
+	(cd ./native-${REVISION} && zip -r ../${ZIPFILE} ./)
+	upload ${REVISION} ${ZIPFILE}
 fi
 
-if [ ! -f ../native-${REVISION}/amd64/rocksdb.dll ]; then
-	echo "Copying from windows"
-	${ROCKSDB_WINDOWS_COPY} ${ROCKSDB_WINDOWS}/native-${REVISION}/ ../
-	echo "Copy Complete"
+if [ -f ./native-${REVISION}/amd64/rocksdb.dll ]; then
+	echo "Uploading Windows native"
+	ZIPFILE=native-${REVISION}-windows.zip
+	(cd ./native-${REVISION} && /c/Program\ Files/7-Zip/7z.exe a -r '..\'${ZIPFILE} .)
+	upload ${REVISION} ${ZIPFILE}
 fi
 
-[ -f ../native-${REVISION}/amd64/librocksdb.dylib ] || { echo "Missing 64 bit mac lib"; exit 1; }
-[ -f ../native-${REVISION}/amd64/librocksdb.so ] || { echo "Missing 64 bit linux lib"; exit 1; }
-[ -f ../native-${REVISION}/amd64/rocksdb.dll ] || { echo "Missing windows lib"; exit 1; }
-
-echo "Contents:"
-find ../native-${REVISION}
-
-echo "Zipping..."
-rm -f ../native-${REVISION}.zip
-(cd ../native-${REVISION} && zip -r ../native-${REVISION}.zip ./)
-
-echo "Creating Release..."
-PAYLOAD="{\"tag_name\": \"v${VERSION}\", \"target_commitish\": \"master\", \"name\": \"v${VERSION}\", \"body\": \"RocksDbSharp v${VERSION} (rocksdb ${RDBVERSION})\", \"draft\": true, \"prelease\": false }"
-echo ${PAYLOAD}
-DRAFTINFO=$(curl -H "Content-Type: application/json" -X POST -d "${PAYLOAD}" --netrc-file ~/.netrc ${CURLOPTIONS} https://api.github.com/repos/warrenfalk/rocksdb-sharp/releases)
-UPLOADURL=`echo "${DRAFTINFO}" | jq .upload_url --raw-output`
-if [ "$UPLOADURL" == "null" ]; then
-	echo "Release creation not successful or unable to determine upload url:"
-	echo "${DRAFTINFO}"
-	exit 1;
+if [ -f ./native-${REVISION}/amd64/librocksdb.so ]; then
+	echo "Uploading Linux native"
+	ZIPFILE=native-${REVISION}-linux.zip
+	(cd ./native-${REVISION} && zip -r ../${ZIPFILE} ./)
+	upload ${REVISION} ${ZIPFILE}
 fi
-UPLOADURLBASE="${UPLOADURL%\{*\}}"
-echo "Uploading Zip..."
-echo "to $UPLOADURLBASE"
-curl -H "Content-Type: application/zip" -X POST --data-binary @../native-${REVISION}.zip --netrc-file ~/.netrc ${CURLOPTIONS} ${UPLOADURLBASE}?name=native-${REVISION}.zip
+
 
 
