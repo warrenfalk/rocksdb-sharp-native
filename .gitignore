@@ -1,3 +1,7 @@
 gflags
 rocksdb
 snappy
+native/
+native-*/
+rocksdbversion
+version

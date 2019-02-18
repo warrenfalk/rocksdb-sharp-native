@@ -114,8 +114,8 @@ if [[ $OSINFO == *"MSYS"* || $OSINFO == *"MINGW"* ]]; then
 
 		cmd //c "msbuild build/rocksdb.sln /p:Configuration=Release /m:$CONCURRENCY" || fail "Rocksdb release build failed"
 		git checkout -- thirdparty.inc
-		mkdir -p ../../native/amd64 && cp -v ./build/Release/rocksdb-shared.dll ../../native/amd64/rocksdb.dll
-		mkdir -p ../../native-${ROCKSDBVERSION}/amd64 && cp -v ./build/Release/rocksdb-shared.dll ../../native-${ROCKSDBVERSION}/amd64/rocksdb.dll
+		mkdir -p ../native/amd64 && cp -v ./build/Release/rocksdb-shared.dll ../native/amd64/rocksdb.dll
+		mkdir -p ../native-${ROCKSDBVERSION}/amd64 && cp -v ./build/Release/rocksdb-shared.dll ../native-${ROCKSDBVERSION}/amd64/rocksdb.dll
 	}) || fail "rocksdb build failed"
 elif [[ $OSDETECT == *"Darwin"* ]]; then
 	fail "Mac OSX build is not yet operational"
@@ -170,8 +170,8 @@ else
 		make clean
 		CFLAGS="${CFLAGS}" PORTABLE=1 make -j$CONCURRENCY shared_lib || fail "64-bit build failed"
 		strip librocksdb${LIBEXT}
-		mkdir -p ../../native/amd64 && cp -vL ./librocksdb${LIBEXT} ../../native/amd64/librocksdb${LIBEXT}
-		mkdir -p ../../native-${ROCKSDBVERSION}/amd64 && cp -vL ./librocksdb${LIBEXT} ../../native-${ROCKSDBVERSION}/amd64/librocksdb${LIBEXT}
+		mkdir -p ../native/amd64 && cp -vL ./librocksdb${LIBEXT} ../native/amd64/librocksdb${LIBEXT}
+		mkdir -p ../native-${ROCKSDBVERSION}/amd64 && cp -vL ./librocksdb${LIBEXT} ../native-${ROCKSDBVERSION}/amd64/librocksdb${LIBEXT}
 
 		# This no longer seems to work on a mac, so I'm removing support for it
 		# If someone wants to try to fix this, then I'm happy to take a PR
@@ -182,14 +182,14 @@ else
 		#make clean
 		#CFLAGS="${CFLAGS} -m32" PORTABLE=1 make -j$CONCURRENCY shared_lib || fail "32-bit build failed"
 		#strip librocksdb${LIBEXT}
-		#mkdir -p ../../native/i386 && cp -vL ./librocksdb${LIBEXT} ../../native/i386/librocksdb${LIBEXT}
-		#mkdir -p ../../native-${ROCKSDBVERSION}/i386 && cp -vL ./librocksdb${LIBEXT} ../../native-${ROCKSDBVERSION}/i386/librocksdb${LIBEXT}
+		#mkdir -p ../native/i386 && cp -vL ./librocksdb${LIBEXT} ../native/i386/librocksdb${LIBEXT}
+		#mkdir -p ../native-${ROCKSDBVERSION}/i386 && cp -vL ./librocksdb${LIBEXT} ../native-${ROCKSDBVERSION}/i386/librocksdb${LIBEXT}
 
 
 	}) || fail "rocksdb build failed"
 fi
 
 
-echo -n ${ROCKSDBSHARPVNUM} > ${BASEDIR}/../version
-echo -n ${ROCKSDBVNUM} > ${BASEDIR}/../rocksdbversion
+echo -n ${ROCKSDBSHARPVNUM} > ${BASEDIR}/version
+echo -n ${ROCKSDBVNUM} > ${BASEDIR}/rocksdbversion
 
