@@ -37,16 +37,22 @@ cd $(dirname $0)
 upload() {
 	RELEASE="$1"
 	FILE="$2"
-	RELEASE_INFO=`curl --silent -H "Content-Type: application/json" --netrc-file ~/.netrc ${CURLOPTIONS} https://api.github.com/repos/warrenfalk/rocksdb-sharp-native/releases/${RELEASE}`
-	echo "Release response for https://api.github.com/repos/warrenfalk/rocksdb-sharp-native/releases/${RELEASE}"
-	echo ${RELEASE_INFO}
-
+	
+	RELEASE_URL=`curl https://api.github.com/repos/warrenfalk/rocksdb-sharp-native/releases --netrc-file ~/.netrc | jq ".[]|{name: .name, url: .url}|select(.name == \"${RELEASE}\")|.url" --raw-output`
+	echo "Release URL: ${RELEASE_URL}"
+	if [ "${RELEASE_URL}" == "" ]; then
 	echo "Creating Release..."
-	PAYLOAD="{\"tag_name\": \"${RELEASE}\", \"target_commitish\": \"master\", \"name\": \"${RELEASE}\", \"body\": \"RocksDb native ${RELEASE} (rocksdb ${RDBVERSION})\", \"draft\": true, \"prelease\": false }"
-	echo "Sending:"
-	echo ${PAYLOAD}
-	echo "-----------"
-	export RELEASE_INFO=$(curl --silent -H "Content-Type: application/json" -X POST -d "${PAYLOAD}" --netrc-file ~/.netrc ${CURLOPTIONS} https://api.github.com/repos/warrenfalk/rocksdb-sharp-native/releases)
+		PAYLOAD="{\"tag_name\": \"${RELEASE}\", \"target_commitish\": \"master\", \"name\": \"${RELEASE}\", \"body\": \"RocksDb native ${RELEASE} (rocksdb ${RDBVERSION})\", \"draft\": true, \"prelease\": false }"
+		echo "Sending:"
+		echo ${PAYLOAD}
+		echo "-----------"
+		export RELEASE_INFO=$(curl --silent -H "Content-Type: application/json" -X POST -d "${PAYLOAD}" --netrc-file ~/.netrc ${CURLOPTIONS} https://api.github.com/repos/warrenfalk/rocksdb-sharp-native/releases)
+	else
+		export RELEASE_INFO=`curl --silent -H "Content-Type: application/json" --netrc-file ~/.netrc ${CURLOPTIONS} ${RELEASE_URL}`
+		#echo "Release response for ${RELEASE_URL}"
+		#echo ${RELEASE_INFO}
+	fi
+
 	echo "Response:"
 	echo ${RELEASE_INFO}
 	echo "-----------"
