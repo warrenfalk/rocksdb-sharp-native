@@ -113,8 +113,8 @@ if [[ $OSINFO == *"MSYS"* || $OSINFO == *"MINGW"* ]]; then
 
 		cmd //c "msbuild build/rocksdb.sln /p:Configuration=Release /m:$CONCURRENCY" || fail "Rocksdb release build failed"
 		git checkout -- thirdparty.inc
-		mkdir -p ../runtimes/win-x64 && cp -v ./build/Release/rocksdb-shared.dll ../runtimes/win-x64/rocksdb.dll
-		mkdir -p ../rocksdb-${ROCKSDBVERSION}/win-x64 && cp -v ./build/Release/rocksdb-shared.dll ../rocksdb-${ROCKSDBVERSION}/win-x64/rocksdb.dll
+		mkdir -p ../runtimes/win-x64/native && cp -v ./build/Release/rocksdb-shared.dll ../runtimes/win-x64/native/rocksdb.dll
+		mkdir -p ../rocksdb-${ROCKSDBVERSION}/win-x64/native && cp -v ./build/Release/rocksdb-shared.dll ../rocksdb-${ROCKSDBVERSION}/win-x64/native/rocksdb.dll
 	}) || fail "rocksdb build failed"
 elif [[ $OSDETECT == *"Darwin"* ]]; then
 	fail "Mac OSX build is not yet operational"
@@ -171,8 +171,8 @@ else
 		make clean
 		CFLAGS="${CFLAGS}" PORTABLE=1 make -j$CONCURRENCY shared_lib || fail "64-bit build failed"
 		strip librocksdb${LIBEXT}
-		mkdir -p ../runtimes/${RUNTIME} && cp -vL ./librocksdb${LIBEXT} ../runtimes/${RUNTIME}/librocksdb${LIBEXT}
-		mkdir -p ../rocksdb-${ROCKSDBVERSION}/${RUNTIME} && cp -vL ./librocksdb${LIBEXT} ../rocksdb-${ROCKSDBVERSION}/${RUNTIME}/librocksdb${LIBEXT}
+		mkdir -p ../runtimes/${RUNTIME} && cp -vL ./librocksdb${LIBEXT} ../runtimes/${RUNTIME}/native/librocksdb${LIBEXT}
+		mkdir -p ../rocksdb-${ROCKSDBVERSION}/${RUNTIME}/native && cp -vL ./librocksdb${LIBEXT} ../rocksdb-${ROCKSDBVERSION}/${RUNTIME}/native/librocksdb${LIBEXT}
 
 		# This no longer seems to work on a mac, so I'm removing support for it
 		# If someone wants to try to fix this, then I'm happy to take a PR
