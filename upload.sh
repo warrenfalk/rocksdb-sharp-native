@@ -62,30 +62,27 @@ upload() {
 		exit 1;
 	fi
 	UPLOADURLBASE="${UPLOADURL%\{*\}}"
-	echo "Uploading Zip..."
+	echo "Uploading Library..."
 	echo "to $UPLOADURLBASE"
-	curl --progress-bar -H "Content-Type: application/zip" -X POST --data-binary @${FILE} --netrc-file ~/.netrc ${CURLOPTIONS} ${UPLOADURLBASE}?name=${FILE}
+	curl --progress-bar -H "Content-Type: application/x-binary" -X POST --data-binary @${FILE} --netrc-file ~/.netrc ${CURLOPTIONS} ${UPLOADURLBASE}?name=${FILE}
 }
 
 if [ -f ./rocksdb-${REVISION}/osx-x64/native/librocksdb.dylib ]; then
 	echo "Uploading MAC native"
-	ZIPFILE=rocksdb-${REVISION}-osx-x64.zip
-	(cd ./rocksdb-${REVISION} && zip -r ../${ZIPFILE} ./)
-	upload ${REVISION} ${ZIPFILE}
+	NATIVE_LIB=./rocksdb-${REVISION}/osx-x64/native/librocksdb.dylib
+	upload ${REVISION} ${NATIVE_LIB}
 fi
 
 if [ -f ./rocksdb-${REVISION}/win-x64/native/rocksdb.dll ]; then
 	echo "Uploading Windows native"
-	ZIPFILE=rocksdb-${REVISION}-win-x64.zip
-	(cd ./rocksdb-${REVISION} && /c/Program\ Files/7-Zip/7z.exe a -r '..\'${ZIPFILE} .)
-	upload ${REVISION} ${ZIPFILE}
+	NATIVE_LIB=./rocksdb-${REVISION}/win-x64/native/rocksdb.dll
+	upload ${REVISION} ${NATIVE_LIB}
 fi
 
 if [ -f ./rocksdb-${REVISION}/linux-x64/native/librocksdb.so ]; then
 	echo "Uploading Linux native"
-	ZIPFILE=rocksdb-${REVISION}-linux-x64.zip
-	(cd ./rocksdb-${REVISION} && zip -r ../${ZIPFILE} ./)
-	upload ${REVISION} ${ZIPFILE}
+	NATIVE_LIB=./rocksdb-${REVISION}/linux-x64/native/librocksdb.so
+	upload ${REVISION} ${NATIVE_LIB}
 fi
 
 
