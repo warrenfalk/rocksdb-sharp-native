@@ -5,6 +5,8 @@ export VERSION=$(cat ./version)
 export RDBVERSION=$(cat ./rocksdbversion)
 echo "REVISION = ${REVISION}"
 
+export THISDIR="$(cd "$(dirname "$0")"; pwd -P)"
+
 PATH=./bin:${PATH}
 
 hash curl || { echo "curl is required, install curl"; exit 1; }
@@ -32,6 +34,7 @@ cd $(dirname $0)
 upload() {
 	RELEASE="$1"
 	FILE="$2"
+	CONTENT_TYPE="$3"
 	
 	RELEASE_URL=`curl https://api.github.com/repos/warrenfalk/rocksdb-sharp-native/releases --netrc-file ~/.netrc | jq ".[]|{name: .name, url: .url}|select(.name == \"${RELEASE}\")|.url" --raw-output`
 	echo "Release URL: ${RELEASE_URL}"
@@ -62,37 +65,40 @@ upload() {
 		exit 1;
 	fi
 	UPLOADURLBASE="${UPLOADURL%\{*\}}"
-	echo "Uploading Zip..."
+	echo "Uploading..."
 	echo "to $UPLOADURLBASE"
 	FILE_NAME=$(basename "$FILE")
-	curl --progress-bar -H "Content-Type: application/zip" -X POST --data-binary @${FILE} --netrc-file ~/.netrc ${CURLOPTIONS} ${UPLOADURLBASE}?name=${FILE_NAME}
+	curl --progress-bar -H "Content-Type: ${CONTENT_TYPE}" -X POST --data-binary @${FILE} --netrc-file ~/.netrc ${CURLOPTIONS} ${UPLOADURLBASE}?name=${FILE_NAME}
 }
 
-if [ -f ./rocksdb-${REVISION}/osx-x64/native/librocksdb.dylib ]; then
+MAC_LIB_FILE=./rocksdb-${REVISION}/osx-x64/native/librocksdb.dylib
+if [ -f ${MAC_LIB_FILE} ]; then
 	echo "Uploading MAC native"
-	NATIVE_LIB=./rocksdb-${REVISION}/osx-x64/native/librocksdb.dylib
-	upload ${REVISION} ${NATIVE_LIB}
-	ZIPFILE=rocksdb-${REVISION}-osx-x64.zip
-	(cd ./rocksdb-${REVISION} && zip -r ../${ZIPFILE} ./)
-	upload ${REVISION} ${ZIPFILE}
+	upload ${REVISION} ${MAC_LIB_FILE} 'application/octet-stream'
+	ZIPFILE="${THISDIR}/rocksdb-${REVISION}-osx-x64.zip"
+	rm -f ${ZIPFILE}
+	(cd "$(dirname "${MAC_LIB_FILE}")" && zip -r "${ZIPFILE}" "$(basename "${MAC_LIB_FILE}")")
+	upload ${REVISION} ${ZIPFILE} 'application/zip'
 fi
 
-if [ -f ./rocksdb-${REVISION}/win-x64/native/rocksdb.dll ]; then
+WINDOWS_LIB_FILE=./rocksdb-${REVISION}/win-x64/native/rocksdb.dll
+if [ -f ${WINDOWS_LIB_FILE} ]; then
 	echo "Uploading Windows native"
-	NATIVE_LIB=./rocksdb-${REVISION}/win-x64/native/rocksdb.dll
-	upload ${REVISION} ${NATIVE_LIB}
-	ZIPFILE=rocksdb-${REVISION}-win-x64.zip
-	(cd ./rocksdb-${REVISION} && /c/Program\ Files/7-Zip/7z.exe a -r '..\'${ZIPFILE} .)
-	upload ${REVISION} ${ZIPFILE}
+	upload ${REVISION} ${WINDOWS_LIB_FILE} 'application/octet-stream'
+	ZIPFILE="${THISDIR}/rocksdb-${REVISION}-win-x64.zip"
+	rm -f ${ZIPFILE}
+	(cd "$(dirname "${WINDOWS_LIB_FILE}")" && /c/Program\ Files/7-Zip/7z.exe a "${ZIPFILE}" "$(basename "${WINDOWS_LIB_FILE}")")
+	upload ${REVISION} ${ZIPFILE} 'application/zip'
 fi
 
-if [ -f ./rocksdb-${REVISION}/linux-x64/native/librocksdb.so ]; then
+LINUX_LIB_FILE=./rocksdb-${REVISION}/linux-x64/native/librocksdb.so
+if [ -f ${LINUX_LIB_FILE} ]; then
 	echo "Uploading Linux native"
-	NATIVE_LIB=./rocksdb-${REVISION}/linux-x64/native/librocksdb.so
-	upload ${REVISION} ${NATIVE_LIB}
-	ZIPFILE=rocksdb-${REVISION}-linux-x64.zip
-	(cd ./rocksdb-${REVISION} && zip -r ../${ZIPFILE} ./)
-	upload ${REVISION} ${ZIPFILE}
+	upload ${REVISION} ${LINUX_LIB_FILE} 'application/octet-stream'
+	ZIPFILE="${THISDIR}/rocksdb-${REVISION}-linux-x64.zip"
+	rm -f ${ZIPFILE}
+	(cd "$(dirname "${LINUX_LIB_FILE}")" && zip -r "${ZIPFILE}" "$(basename "${LINUX_LIB_FILE}")")
+	upload ${REVISION} ${ZIPFILE} 'application/zip'
 fi
 
 
