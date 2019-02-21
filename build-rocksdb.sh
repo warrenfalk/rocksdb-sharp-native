@@ -25,9 +25,8 @@
 # 5. Search through code for old hash and old version number and replace
 # 6. Run this script to build (see README.md for more info)
 
-ROCKSDBVERSION=v5.17.2
-ROCKSDBVNUM=5.17.2
-ROCKSDBSHARPVNUM=5.17.2.0
+ROCKSDBVNUM=`cat rocksdbversion`
+ROCKSDBVERSION=v${ROCKSDBVNUM}
 SNAPPYVERSION=1.1.7
 
 ROCKSDBREMOTE=https://github.com/facebook/rocksdb
@@ -191,6 +190,4 @@ else
 fi
 
 
-echo -n ${ROCKSDBSHARPVNUM} > ${BASEDIR}/version
-echo -n ${ROCKSDBVNUM} > ${BASEDIR}/rocksdbversion
 

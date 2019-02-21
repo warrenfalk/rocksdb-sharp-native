@@ -1,8 +1,8 @@
 #!/bin/bash
 
-export REVISION=$(cat ./build-rocksdb.sh | grep ROCKSDBVERSION | sed -n -e '/^ROCKSDBVERSION=/ s/ROCKSDBVERSION=\(.*\)/\1/p')
-export VERSION=$(cat ./version)
 export RDBVERSION=$(cat ./rocksdbversion)
+export REVISION=v${RDBVERSION}
+export VERSION=$(cat ./version)
 echo "REVISION = ${REVISION}"
 
 export THISDIR="$(cd "$(dirname "$0")"; pwd -P)"

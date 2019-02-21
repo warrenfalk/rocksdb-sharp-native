@@ -5,7 +5,5 @@ native/
 native-*/
 runtimes/
 rocksdb-*/
-rocksdbversion
-version
 *.zip
 bin/
