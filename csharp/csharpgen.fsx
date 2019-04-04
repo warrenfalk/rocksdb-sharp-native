@@ -136,9 +136,8 @@ let parseArgType (args:string) =
 let delegateNamePattern = Regex(@"^\(\*([a-zA-Z_0-9]+)\)\s*\(\s*", RegexOptions.Compiled)
 let parseDelegateSignature (args: string) =
     match args with
-    | Regex delegateNamePattern (args, [delegateName]) ->
-        
-    | _ -> (None, None, None, args)
+    | Regex delegateNamePattern (args, [delegateName]) -> (Some delegateName, Some "DGN2", args)
+    | _ -> (None, None, args)
     
 
 let parseNextNativeArg (args:string) =
