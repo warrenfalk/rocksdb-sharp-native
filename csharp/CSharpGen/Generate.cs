@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace RocksDbPrepareCApiHeader
@@ -183,7 +185,12 @@ namespace RocksDbPrepareCApiHeader
 
             var output = nativeRawCs.ToString();
 
-            Console.WriteLine(output);
+            //using (var outputStream = Console.OpenStandardOutput())
+            using (var outputStream = File.Create(@"C:\Users\wfalk\source\rocksdb-sharp\RocksDbSharp\Native.cs"))
+            using (var writer = new StreamWriter(outputStream, Encoding.UTF8))
+            {
+                writer.WriteLine(output);
+            }
             Console.Error.WriteLine($"Done");
 
         }
@@ -395,11 +402,63 @@ namespace RocksDbPrepareCApiHeader
                 for (int combinationIndex = 0; combinationIndex < combinationCount; combinationIndex++)
                 {
                     var useStrategies = strategies.Where((s, i) => 0 != ((1 << i) & combinationIndex)).ToHashSet();
-                    var managedArgs = Args.Select(arg => arg.Variations.FirstOrDefault(v => useStrategies.Contains(v.TypeStrategy)) ?? arg.Variations.FirstOrDefault(v => v.TypeStrategy == "default") ?? arg.Variations.First());
-                    var managedArgLines = string.Join(",", managedArgs.Select(ma => $"\n    {ma.WithTypeLookup(typeLookup)}"));
-                    var isUnsafe = managedArgLines.Contains("*");
-                    yield return $"{Comment.If(c => !string.IsNullOrEmpty(c)).Then(c => $"{c}\n").OrElse("")}public {(isUnsafe ? "unsafe " : "")}abstract {ReturnType} {Name}({managedArgLines});\n";
+                    var managedArgs = Args.Select(arg => arg.Variations.FirstOrDefault(v => useStrategies.Contains(v.TypeStrategy)) ?? arg.Variations.FirstOrDefault(v => v.TypeStrategy == "default") ?? arg.Variations.First()).ToArray();
+                    var argStrings = managedArgs.Select(ma => ma.WithTypeLookup(typeLookup));
+                    
+                    // Return the default abstract native import declaration for this variation
+                    yield return ToCsharpCode(
+                        comment: Comment,
+                        returnType: ReturnType,
+                        name: Name,
+                        args: argStrings
+                    );
+
+                    // should we generate an exception-throwing wrapper?
+                    if (argStrings.LastOrDefault() == "out char_ptr_ptr errptr")
+                    {
+                        // Generate an errptr -> exception-throwing wrapper for this one
+                        // i.e. remove errptr arg from signature, and generate a body to call the errptr version
+                        var withoutErrPtr = managedArgs.Take(managedArgs.Length - 1).ToArray();
+                        yield return ToCsharpCode(
+                            comment: Comment,
+                            returnType: ReturnType,
+                            name: Name,
+                            args: withoutErrPtr.Select(ma => ma.WithTypeLookup(typeLookup)),
+                            body: WrapWithThrow(
+                                isVoid: ReturnType == "void",
+                                name: Name,
+                                args: withoutErrPtr.Select(ma => ma.Type.StartsWith("out ") ? $"out {ma.Name}" : ma.Name)
+                            )
+                        );
+                    }
                 }
+            }
+
+            public static string WrapWithThrow(bool isVoid, string name, IEnumerable<string> args)
+            {
+                var argList = string.Join("", args.Select(a => $"{a}, "));
+                var cs = new IndentedCodeBuilder();
+                cs.StartBlock("{");
+                cs.AppendLine($"{(isVoid ? "" : "var result = ")}{name}({argList}out char_ptr_ptr errptr);");
+                cs.AppendLine($"if (errptr != IntPtr.Zero)");
+                cs.AppendIndentedLine("throw new RocksDbException(errptr);");
+                if (!isVoid)
+                    cs.AppendLine($"return result;");
+                cs.EndBlock("}");
+                return cs.ToString();
+            }
+
+            public static string ToCsharpCode(
+                string comment, 
+                string returnType, 
+                string name, 
+                IEnumerable<string> args,
+                string body = null)
+            {
+                var managedArgLines = string.Join(",", args.Select(arg => $"\n    {arg}"));
+                var isUnsafe = managedArgLines.Contains("*");
+                string bodyText = body == null ? ";" : $"\n{body}";
+                return $"{comment.If(c => !string.IsNullOrEmpty(c)).Then(c => $"{c}\n").OrElse("")}public {(isUnsafe ? "unsafe " : "")}{(body == null ? "abstract " : "")}{returnType} {name}({managedArgLines}){bodyText}\n";
             }
         }
 
@@ -868,6 +927,9 @@ namespace RocksDbPrepareCApiHeader
 
         public IndentedCodeBuilder AppendLine(string text)
             => AppendLines(SplitLines(text));
+
+        public IndentedCodeBuilder AppendIndentedLine(string text)
+            => AppendLineWithIndent((Indent: Indent + 1, Line: text));
 
         public IndentedCodeBuilder AppendLineWithoutIndent(string text)
             => AppendLineWithIndent((0, text));
