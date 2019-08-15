@@ -85,7 +85,7 @@ if [[ $OSINFO == *"MSYS"* || $OSINFO == *"MINGW"* ]]; then
 		checkout "snappy" "$SNAPPYREMOTE" "$SNAPPYVERSION" "$SNAPPYVERSION"
 		mkdir -p build
 		(cd build && {
-			cmake -G "Visual Studio 15 2017 Win64" -DSNAPPY_BUILD_TESTS=0 .. || fail "Running cmake on snappy failed"
+			cmake -G "Visual Studio 16 2019" -DSNAPPY_BUILD_TESTS=0 .. || fail "Running cmake on snappy failed"
 			update_vcxproj || warn "unable to patch snappy for static vc runtime"
 		}) || fail "cmake build generation failed"
 
@@ -106,7 +106,7 @@ if [[ $OSINFO == *"MSYS"* || $OSINFO == *"MINGW"* ]]; then
 
 		mkdir -p build
 		(cd build && {
-			cmake -G "Visual Studio 15 2017 Win64" -WITH_TESTS=OFF -DWITH_MD_LIBRARY=OFF -DOPTDBG=1 -DGFLAGS=0 -DSNAPPY=1 -DPORTABLE=1 -DWITH_TOOLS=0 .. || fail "Running cmake failed"
+			cmake -G "Visual Studio 16 2019" -WITH_TESTS=OFF -DWITH_MD_LIBRARY=OFF -DOPTDBG=1 -DGFLAGS=0 -DSNAPPY=1 -DPORTABLE=1 -DWITH_TOOLS=0 .. || fail "Running cmake failed"
 			update_vcxproj || warn "failed to patch vcxproj files for static vc runtime"
 		}) || fail "cmake build generation failed"
 
