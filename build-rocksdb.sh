@@ -156,6 +156,7 @@ else
 	# xcode-select --install
 	# brew install gcc
 	# brew install snappy
+	# brew install zstd
     # Don't have universal version of lz4 through brew, have to build manually
 	# git clone git@github.com:Cyan4973/lz4.git
 	# make -C lz4/lib
