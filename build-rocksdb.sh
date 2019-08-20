@@ -99,7 +99,7 @@ if [[ $OSINFO == *"MSYS"* || $OSINFO == *"MINGW"* ]]; then
 	(cd vcpkg && {
 		checkout "vcpkg" "https://github.com/Microsoft/vcpkg" "master" "master"
 		./bootstrap-vcpkg.sh
-		./vcpkg.exe install zlib:x64-windows snappy:x64-windows lz4:x64-windows zstd:x64-windows || fail "unable to install libraries with vcpkg.exe"
+		./vcpkg.exe install zlib:x64-windows-static snappy:x64-windows-static lz4:x64-windows-static zstd:x64-windows-static || fail "unable to install libraries with vcpkg.exe"
 	})
 
 	mkdir -p rocksdb || fail "unable to create rocksdb directory"
@@ -107,7 +107,7 @@ if [[ $OSINFO == *"MSYS"* || $OSINFO == *"MINGW"* ]]; then
 		checkout "rocksdb" "$ROCKSDBREMOTE" "$ROCKSDBVERSION" "$ROCKSDBVERSION"
 
 		mkdir -p build
-		VCPKG_HOME="$(realpath ../vcpkg/installed/x64-windows)"
+		VCPKG_HOME="$(realpath ../vcpkg/installed/x64-windows-static)"
 		VCPKG_INCLUDE="${VCPKG_HOME}/include"
 		VCPKG_LIB_DEBUG="${VCPKG_HOME}/debug"
 		VCPKG_LIB_RELEASE="${VCPKG_HOME}/lib"
@@ -121,8 +121,8 @@ if [[ $OSINFO == *"MSYS"* || $OSINFO == *"MINGW"* ]]; then
 		export LZ4_LIB_DEBUG="${VCPKG_LIB_DEBUG}/lz4.lib"
 		export LZ4_LIB_RELEASE="${VCPKG_LIB_RELEASE}/lz4.lib"
 		export ZSTD_INCLUDE="${VCPKG_INCLUDE}"
-		export ZSTD_LIB_DEBUG="${VCPKG_LIB_DEBUG}/zstd.lib"
-		export ZSTD_LIB_RELEASE="${VCPKG_LIB_RELEASE}/zstd.lib"
+		export ZSTD_LIB_DEBUG="${VCPKG_LIB_DEBUG}/zstd_static.lib"
+		export ZSTD_LIB_RELEASE="${VCPKG_LIB_RELEASE}/zstd_static.lib"
 		(cd build && {
 			cmake -G "Visual Studio 16 2019" -WITH_TESTS=OFF -DWITH_MD_LIBRARY=OFF -DOPTDBG=1 -DGFLAGS=0 -DSNAPPY=1 -DWITH_ZLIB=1 -DWITH_LZ4=1 -DWITH_ZSTD=1 -DPORTABLE=1 -DWITH_TOOLS=0 .. || fail "Running cmake failed"
 			update_vcxproj || warn "failed to patch vcxproj files for static vc runtime"
